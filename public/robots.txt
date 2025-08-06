@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Sitemap (you would need to generate this)
+# Sitemap: https://tacopii-code-reviewer.netlify.app/sitemap.xml
+
+# Block access to admin and internal pages
+Disallow: /admin
+Disallow: /.netlify/
+Disallow: /api/
+
+# Allow specific pages
+Allow: /
+Allow: /about
+Allow: /help
+Allow: /privacy
+Allow: /terms
