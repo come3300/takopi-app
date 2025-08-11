@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai')
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
@@ -115,7 +115,7 @@ const validateRequest = (data) => {
 }
 
 // Main handler function
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.status(200).json({})
