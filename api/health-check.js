@@ -5,7 +5,7 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 }
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.status(200).json({})
