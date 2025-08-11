@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useConsultation } from '../hooks/useConsultation'
 import LoadingSpinner, { MiniLoadingSpinner } from '../components/LoadingSpinner'
 import { ErrorMessage } from '../components/ErrorBoundary'
+import OptimizedTerminalInput from '../components/OptimizedTerminalInput'
 import ReactMarkdown from 'react-markdown'
 
 const ConsultationPage = () => {
@@ -70,10 +71,10 @@ const ConsultationPage = () => {
       <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
         <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${isUser ? 'order-2' : 'order-1'}`}>
           <div
-            className={`px-4 py-3 rounded-lg shadow-sm ${
+            className={`px-6 py-4 rounded-2xl shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-[1.02] ${
               isUser
-                ? 'bg-primary text-white rounded-br-none'
-                : 'bg-white border border-gray-200 rounded-bl-none'
+                ? 'bg-gradient-to-r from-blue-500/80 to-purple-500/80 text-white rounded-br-none border border-blue-300/30'
+                : 'bg-white/10 border border-white/20 rounded-bl-none text-white'
             }`}
           >
             {isUser ? (
@@ -133,9 +134,9 @@ const ConsultationPage = () => {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-4">
+    <div className="min-h-screen flex flex-col">
+      {/* Premium Header */}
+      <div className="backdrop-blur-xl bg-gradient-to-r from-white/10 to-white/5 border-b border-white/20 px-6 py-6 shadow-2xl">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <div className="text-2xl">🐙💖</div>
@@ -177,9 +178,9 @@ const ConsultationPage = () => {
           </div>
         </div>
 
-        {/* Input Area */}
-        <div className="bg-white border-t border-gray-200 px-4 py-4">
-          <div className="max-w-4xl mx-auto">
+        {/* Terminal Input Area */}
+        <div className="px-4 py-6" style={{ background: 'rgba(13, 17, 23, 0.6)', backdropFilter: 'blur(20px)' }}>
+          <div className="max-w-4xl mx-auto space-y-4">
             {error && (
               <div className="mb-4">
                 <ErrorMessage 
@@ -190,43 +191,59 @@ const ConsultationPage = () => {
               </div>
             )}
             
-            <div className="flex space-x-3">
+            <div className="flex items-end space-x-4">
               <div className="flex-1">
-                <textarea
+                <OptimizedTerminalInput
                   ref={textareaRef}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="タコピーに相談したいことを書いてねっピ... (Shift+Enterで改行、Enterで送信)"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  rows="3"
                   maxLength={2000}
                   disabled={isLoading}
+                  rows={3}
+                  terminalTitle="💖 Tacopii Consultation Terminal"
+                  userName="troubled_coder"
+                  directory="~/comfort-zone"
                 />
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-xs text-gray-500">
-                    {message.length}/2000文字
-                  </span>
-                  {isLoading && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <MiniLoadingSpinner size="sm" />
-                      <span>タコピーが考えてるっピ...</span>
-                    </div>
-                  )}
-                </div>
               </div>
               
               <button
                 onClick={handleSendMessage}
                 disabled={!message.trim() || isLoading}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 border-2 ${
                   !message.trim() || isLoading
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-secondary text-white hover:bg-pink-500 active:scale-95 shadow-md'
+                    ? 'bg-gray-700 text-gray-500 border-gray-600 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-secondary to-pink-500 text-white border-secondary hover:from-pink-500 hover:to-secondary active:scale-95 shadow-lg hover:shadow-pink-500/25'
                 }`}
+                style={{
+                  textShadow: '0 0 10px rgba(255, 255, 255, 0.8)',
+                  boxShadow: !message.trim() || isLoading ? 'none' : '0 0 20px rgba(255, 105, 180, 0.4)'
+                }}
               >
-                {isLoading ? '💭' : '💖 相談する'}
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <MiniLoadingSpinner size="sm" />
+                    <span>💭 考え中...</span>
+                  </div>
+                ) : (
+                  '💖 相談送信'
+                )}
               </button>
+            </div>
+            
+            {/* Terminal Status Bar */}
+            <div className="bg-gray-800 rounded-lg px-4 py-2 text-xs font-mono">
+              <div className="flex justify-between items-center text-green-400">
+                <div className="flex items-center space-x-4">
+                  <span>🌟 Connection: Happy Star Network</span>
+                  <span>💖 Mode: Comfort & Support</span>
+                  {isLoading && <span className="animate-pulse">🐙 Tacopii is typing...</span>}
+                </div>
+                <div className="text-cyan-400">
+                  {message.length}/2000 chars
+                </div>
+              </div>
             </div>
           </div>
         </div>

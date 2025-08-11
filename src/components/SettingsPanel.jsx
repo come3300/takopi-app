@@ -41,14 +41,14 @@ const SettingsPanel = ({ onSettingsChange }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md">
+    <div className="premium-glass rounded-3xl transition-all duration-500 hover:scale-[1.01]">
       <div 
         className="flex justify-between items-center p-4 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center space-x-2">
           <span className="text-xl">⚙️</span>
-          <h3 className="font-semibold text-gray-900">レビュー設定っピ</h3>
+          <h3 className="font-semibold text-white">レビュー設定っピ</h3>
         </div>
         <button className="text-gray-400 hover:text-gray-600 transition-colors">
           {isExpanded ? '📁' : '📂'}
@@ -59,7 +59,7 @@ const SettingsPanel = ({ onSettingsChange }) => {
         <div className="px-4 pb-4 space-y-6">
           {/* Review Level */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-white/90 mb-3">
               📈 レビューレベル: {settings.reviewLevel}/5
             </label>
             <div className="space-y-2">
@@ -79,7 +79,7 @@ const SettingsPanel = ({ onSettingsChange }) => {
                 <span>詳細</span>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-sm text-white/80 mt-2">
               {getReviewLevelDescription(settings.reviewLevel)}
             </p>
           </div>
@@ -87,7 +87,7 @@ const SettingsPanel = ({ onSettingsChange }) => {
           {/* Focus Areas */}
           <div>
             <div className="flex justify-between items-center mb-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-white/90">
                 🎯 フォーカス領域
               </label>
               <div className="space-x-2">

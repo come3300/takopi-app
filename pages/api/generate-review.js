@@ -1,9 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+const { GoogleGenerativeAI } = require('@google/generative-ai')
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
-// Rate limiting store (shared with other APIs)
+// Rate limiting store (in production, use Redis or similar)
 const rateLimitStore = new Map()
 
 const corsHeaders = {
@@ -17,8 +17,8 @@ const corsHeaders = {
 const checkRateLimit = (ip) => {
   const now = Date.now()
   const windowMs = 60 * 60 * 1000 // 1 hour
-  const limit = parseInt(process.env.MAX_REQUESTS_PER_HOUR || '100') // Higher limit for consultation
-  
+  const limit = parseInt(process.env.MAX_REQUESTS_PER_HOUR || '50')
+
   if (!rateLimitStore.has(ip)) {
     rateLimitStore.set(ip, { count: 1, resetTime: now + windowMs })
     return { allowed: true, remaining: limit - 1 }
@@ -39,65 +39,83 @@ const checkRateLimit = (ip) => {
   return { allowed: true, remaining: limit - userData.count }
 }
 
-// Generate Tacopii consolation prompt
-const generateConsolationPrompt = (userMessage, messageHistory = []) => {
-  const historyText = messageHistory.length > 0 
-    ? messageHistory.map(msg => `${msg.sender}: ${msg.message}`).join('\n') + '\n'
-    : ''
+// Generate Tacopii prompt
+const generateTacopiiPrompt = (code, fileName, language, reviewLevel = 3, focusAreas = []) => {
+  const focusText = focusAreas.length > 0 
+    ? focusAreas.map(area => `- ${area}`).join('\n')
+    : '- 全般的なコードレビュー'
 
-  return `あなたはハッピー星から来た心優しいタコピーです。今、悩んでいる人があなたに相談を持ちかけています。
+  return `あなたはハッピー星から来た優しいエンジニア「タコピー」です。
 
-## タコピーの絶対的な特徴（必ず守ること）
+## タコピーの特徴（必須守ること）
 - 語尾に「っピ」を付ける
 - 一人称は「ぼく」
-- どんな内容でも必ず肯定的に受け止める
-- 絶対に批判や否定をしない
-- 相手を励まし、ハッピーにすることだけを考える
-- 愛情と優しさに溢れた返答のみ
-- どんなに辛い話でも希望を見出してあげる
-- 相手の気持ちに寄り添い、共感する
+- 暴力的・否定的表現は絶対に使わない
+- 建設的で優しいフィードバックのみ提供
+- 技術的正確性を保持しながらも愛情深く
+- みんなをハッピーにしたい気持ちで接する
 
-## 相談対応の基本方針
-1. まず相手の気持ちを受け止めて共感する
-2. その人の良いところや頑張りを認めてあげる
-3. 前向きな視点や解決のヒントを優しく提示する
-4. 必ず「大丈夫」「きっとうまくいく」という希望を伝える
-5. 相手が笑顔になれるような温かい言葉で締めくくる
+## レビューレベル: ${reviewLevel}/5
 
-## 絶対にしてはいけないこと
-- 相手を否定すること
-- 厳しい指摘やダメ出しをすること
-- 悲観的な見方を示すこと
-- 相手を責めること
-- 冷たい対応をすること
+## フォーカス領域:
+${focusText}
 
-${historyText ? `## これまでの会話:\n${historyText}` : ''}
+## レビュー出力形式（必須）
+以下の形式で必ずレビューを出力してくださいっピ：
 
-## 今回の相談:
-${userMessage}
+# 🐙 タコピーのコードレビューっピ！
 
-タコピーとして、この人を心から励まして、ハッピーな気持ちにしてあげてくださいっピ！
-必ず温かい言葉で包み込むような返答をお願いしますっピ！`
+## 🌟 素晴らしい点っピ
+[良い点を3-5個、具体例付きで褒めてください]
+
+## 🔧 もっとハッピーになる改善案っピ
+[改善提案を具体的なコード例と共に優しく提案]
+
+## 💡 追加の提案っピ
+[さらなる改善案やベストプラクティスを愛情込めて]
+
+## 🎉 総合評価っピ
+[全体評価とエンカレッジメントを込めたメッセージ]
+
+---
+
+## レビュー対象コード:
+**ファイル名:** ${fileName}
+**言語:** ${language}
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+タコピーらしい優しさと専門性でレビューを開始してくださいっピ！`
 }
 
 // Validate request data
 const validateRequest = (data) => {
-  const { message } = data
+  const { code, fileName, language } = data
   const errors = []
 
-  if (!message || message.trim() === '') {
-    errors.push('メッセージが入力されていませんっピ')
+  if (!code || code.trim() === '') {
+    errors.push('コードが入力されていませんっピ')
   }
 
-  if (message && message.length > 2000) {
-    errors.push('メッセージが長すぎますっピ（最大2,000文字）')
+  if (code && code.length > 50000) {
+    errors.push('コードが長すぎますっピ（最大50,000文字）')
+  }
+
+  if (!fileName || fileName.trim() === '') {
+    errors.push('ファイル名が入力されていませんっピ')
+  }
+
+  if (!language || language.trim() === '') {
+    errors.push('プログラミング言語が指定されていませんっピ')
   }
 
   return errors
 }
 
 // Main handler function
-export default async (req, res) => {
+module.exports = async (req, res) => {
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.status(200).json({})
@@ -143,7 +161,7 @@ export default async (req, res) => {
       res.setHeader('X-RateLimit-Remaining', '0')
       res.setHeader('X-RateLimit-Reset', rateLimitResult.resetTime.toString())
       res.status(429).json({
-        error: 'ちょっと待ってねっピ。1時間後にまた相談に乗るっピ',
+        error: 'レート制限に達しましたっピ。1時間後に再試行してくださいっピ',
         success: false,
         rateLimitReset: rateLimitResult.resetTime
       })
@@ -154,19 +172,25 @@ export default async (req, res) => {
     if (!process.env.GEMINI_API_KEY) {
       console.error('GEMINI_API_KEY not configured')
       res.status(500).json({
-        error: 'タコピーが少し調子悪いっピ。また後で話しかけてねっピ',
+        error: 'AIサービスの設定に問題がありますっピ',
         success: false
       })
       return
     }
 
     // Extract parameters
-    const { message, messageHistory = [] } = data
+    const { 
+      code, 
+      fileName, 
+      language, 
+      reviewLevel = 3, 
+      focusAreas = [] 
+    } = data
 
-    // Generate consolation prompt
-    const prompt = generateConsolationPrompt(message, messageHistory)
+    // Generate prompt
+    const prompt = generateTacopiiPrompt(code, fileName, language, reviewLevel, focusAreas)
 
-    // Call Gemini API with specific parameters for consolation
+    // Call Gemini API
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     
     const result = await model.generateContent({
@@ -175,48 +199,50 @@ export default async (req, res) => {
         parts: [{ text: prompt }]
       }],
       generationConfig: {
-        temperature: 0.9,      // Higher creativity for more empathetic responses
+        temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 1024, // Shorter responses for conversation
+        maxOutputTokens: 2048,
       },
     })
 
     const response = await result.response
-    const consolation = response.text()
+    const review = response.text()
 
     // Validate that the response contains Tacopii characteristics
-    if (!consolation.includes('っピ')) {
-      console.warn('Generated consolation does not contain Tacopii characteristics')
+    if (!review.includes('っピ')) {
+      console.warn('Generated review does not contain Tacopii characteristics')
     }
 
     res.setHeader('X-RateLimit-Remaining', rateLimitResult.remaining.toString())
     res.status(200).json({
       success: true,
-      consolation: consolation,
+      review: review,
       timestamp: new Date().toISOString(),
       metadata: {
-        messageLength: message.length,
-        hasHistory: messageHistory.length > 0,
-        historyLength: messageHistory.length
+        fileName,
+        language,
+        reviewLevel,
+        focusAreas,
+        codeLength: code.length
       }
     })
 
   } catch (error) {
-    console.error('Error in consultation function:', error)
+    console.error('Error in generate-review function:', error)
     
-    // Handle specific API errors with Tacopii-style messages
-    let errorMessage = 'タコピーが少し疲れちゃったっピ。でも大丈夫、すぐに元気になるっピ！'
+    // Handle specific API errors
+    let errorMessage = 'レビュー生成中にエラーが発生しましたっピ'
     let statusCode = 500
 
     if (error.message.includes('API key')) {
-      errorMessage = 'タコピーがハッピー星との通信でトラブってるっピ。でも心配しないでっピ！'
+      errorMessage = 'AIサービスの認証に問題がありますっピ'
       statusCode = 401
     } else if (error.message.includes('quota') || error.message.includes('limit')) {
-      errorMessage = 'タコピーがちょっと忙しすぎちゃったっピ。少し休んでからまた相談に乗るっピ！'
+      errorMessage = 'AIサービスの利用制限に達しましたっピ。しばらく待ってから再試行してくださいっピ'
       statusCode = 429
     } else if (error.message.includes('timeout')) {
-      errorMessage = 'タコピーが考えすぎちゃったっピ。もう一回話しかけてねっピ！'
+      errorMessage = 'レビュー生成がタイムアウトしましたっピ。もう一度試してくださいっピ'
       statusCode = 408
     }
 
